@@ -9,12 +9,12 @@ import (
 )
 
 func handleRequest(conn net.Conn, data []byte) {
-	var channel string
-	var channelDir string
+	var collection string
+	var collectionDir string
 	var dataDir string
 	var metaDir string
 	var perms os.FileMode
-	var getChannelFilenames func(path string, info os.FileInfo, err error) error
+	var getcollectionFilenames func(path string, info os.FileInfo, err error) error
 	var fileinfos []os.FileInfo
 
 	message, err := resp.NewMessage(data)
@@ -27,26 +27,26 @@ func handleRequest(conn net.Conn, data []byte) {
 	}
 	command, _ := msgs[0].Str()
 	if len(msgs) > 1 {
-		channel, _ = msgs[1].Str()
+		collection, _ = msgs[1].Str()
 		perms = os.FileMode(0700)
-		channelDir = filepath.Join(DataDir, channel)
-		dataDir = filepath.Join(channelDir, "data")
-		metaDir = filepath.Join(channelDir, "meta")
+		collectionDir = filepath.Join(DataDir, collection)
+		dataDir = filepath.Join(collectionDir, "data")
+		metaDir = filepath.Join(collectionDir, "meta")
 	} else {
-		channel = ""
+		collection = ""
 	}
 
 	// CREATE GET ADD HEAD TAIL MSET MGET
 	switch command {
 	case "GET":
-		getChannelFilenames = func(path string, info os.FileInfo, err error) error {
+		getcollectionFilenames = func(path string, info os.FileInfo, err error) error {
 			if info.IsDir() {
 				return nil
 			}
 			fileinfos = append(fileinfos, info)
 			return nil
 		}
-		filepath.Walk(dataDir, getChannelFilenames)
+		filepath.Walk(dataDir, getcollectionFilenames)
 
 		fmt.Fprintf(conn, "*%d\r\n", len(fileinfos))
 		for _, info := range fileinfos {
@@ -92,6 +92,6 @@ func handleRequest(conn net.Conn, data []byte) {
 
 }
 
-func isValidChannel(channel string) bool {
+func isValidcollection(collection string) bool {
 	return true
 }
