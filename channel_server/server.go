@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"strconv"
 	"time"
 )
 
@@ -11,7 +12,7 @@ const DataDir = "/srv/dw-data/"
 const ReadBufferSize = 64
 
 func timestamp() string {
-	return string(time.Now().UnixNano())
+	return strconv.FormatInt(time.Now().UnixNano(), 10)
 }
 
 func checkDataDir(dir string) (bool, string) {
