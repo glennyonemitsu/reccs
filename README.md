@@ -2,8 +2,8 @@
 
 Reccs is a REmote Capped Collection Server providing functionality similar to 
 MongoDB's capped collection, communicating with the Redis Serialization 
-Protocol, RESP. You can interact with the server via the redis cli or any redis
-library.
+Protocol, RESP. You can interact with reccs by using the redis cli or any redis
+library in your programming language.
 
 A capped collection is a first in, first out store that is constraint to a
 certain capacity. This is ideal for time based or ordered data where only a
