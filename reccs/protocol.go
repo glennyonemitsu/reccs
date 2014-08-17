@@ -41,11 +41,11 @@ func handleRequest(conn net.Conn, data []byte) {
 	// TNEW TOLD - timestamps
 	// PING - server ping
 	switch command {
-	case "TNEW":
+	case "TSHEAD":
 		files := getDirFiles(dataDir)
 		timestamp := filepath.Base(files[len(files)-1])
 		streamIntegers(splitTimestamp(timestamp), conn)
-	case "TOLD":
+	case "TSTAIL":
 		files := getDirFiles(dataDir)
 		timestamp := filepath.Base(files[0])
 		streamIntegers(splitTimestamp(timestamp), conn)
@@ -53,14 +53,12 @@ func handleRequest(conn net.Conn, data []byte) {
 		conn.Write([]byte("+PONG\r\n"))
 	case "HEAD":
 		files := getDirFiles(dataDir)
-		file := make([]string, 1)
-		file[0] = files[len(files)-1]
-		streamFiles(file, conn)
+		file := files[len(files)-1]
+		streamFile(file, conn)
 	case "TAIL":
 		files := getDirFiles(dataDir)
-		file := make([]string, 1)
-		file[0] = files[0]
-		streamFiles(file, conn)
+		file := files[0]
+		streamFile(file, conn)
 	case "GET":
 		files := getDirFiles(dataDir)
 		streamFiles(files, conn)
@@ -120,6 +118,28 @@ func streamFiles(files []string, w io.Writer) {
 	}
 }
 
+func streamFile(file string, w io.Writer) {
+	var bytes []byte
+	var remaining int64
+
+	fh, _ := os.Open(file)
+	info, _ := fh.Stat()
+	remaining = info.Size()
+	fmt.Fprintf(w, "$%d\r\n", remaining)
+	for remaining > 0 {
+		if remaining < 1024 {
+			bytes = make([]byte, remaining)
+			remaining = 0
+		} else {
+			bytes = make([]byte, 1024)
+			remaining -= 1024
+		}
+		fh.Read(bytes)
+		w.Write(bytes)
+	}
+	fmt.Fprintf(w, "\r\n")
+	fh.Close()
+}
 func streamIntegers(ints []int64, w io.Writer) {
 	fmt.Fprintf(w, "*%d\r\n", len(ints))
 	for _, i := range ints {
