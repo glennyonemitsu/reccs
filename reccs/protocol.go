@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"github.com/fzzy/radix/redis/resp"
 	"io"
 	"net"
 	"os"
@@ -17,7 +16,7 @@ func handleRequest(conn net.Conn, data []byte) {
 	var metaDir string
 	var perms os.FileMode
 
-	message, err := resp.NewMessage(data)
+	message, err := NewMessage(data)
 	if err != nil {
 		return
 	}
