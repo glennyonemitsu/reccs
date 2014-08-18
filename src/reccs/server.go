@@ -47,9 +47,7 @@ func (s *Server) HandleConnection(conn net.Conn) {
 
 func (s *Server) HandleRequest(conn net.Conn, data []byte) {
 	var collection string
-	var collectionDir string
 	var dataDir string
-	var configDir string
 	var perms os.FileMode
 
 	message, err := NewMessage(data)
@@ -71,28 +69,68 @@ func (s *Server) HandleRequest(conn net.Conn, data []byte) {
 	}
 
 	if command, ok := s.Commands[strings.ToLower(commandName)]; ok {
-		// [1:] is to cut off command name in RESP message
-		command.Run(msgs[1:], conn)
+		var paramMsgs []*Message
+		var paramCount int
+		var collection *Collection
+		var parameters []interface{}
+		var message *Message
+
+		paramMsgs = msgs[1:]
+		paramCount = len(paramMsgs)
+
+		if len(paramMsgs) > len(command.Parameters) {
+			fmt.Fprint(conn, "-Incorrect command parameters\r\n")
+			return
+		}
+
+		for i, param := range command.Parameters {
+			if param.Required && i >= paramCount {
+				fmt.Fprint(conn, "-Incorrect command parameters\r\n")
+				return
+			}
+			message = paramMsgs[i]
+			switch param.Type {
+			case "collection":
+				value, err := message.Str()
+				if err != nil || collection != nil {
+					fmt.Fprint(conn, "-Incorrect command parameters\r\n")
+					return
+				}
+				collection = CreateCollection(value, s.DataPath)
+			case "string":
+				value, err := message.Str()
+				if err != nil {
+					fmt.Fprint(conn, "-Incorrect command parameters\r\n")
+					return
+				}
+				parameters = append(parameters, value)
+			case "integer":
+				value, err := message.Int()
+				if err != nil {
+					fmt.Fprint(conn, "-Incorrect command parameters\r\n")
+					return
+				}
+				parameters = append(parameters, value)
+			case "binary":
+				value, err := message.Bytes()
+				if err != nil {
+					fmt.Fprint(conn, "-Incorrect command parameters\r\n")
+					return
+				}
+				parameters = append(parameters, value)
+			}
+		}
+		command.Callback(parameters, conn, collection)
 	} else {
 		conn.Write([]byte("-Unrecognized command\r\n"))
 	}
 	return
 
-	command, _ := msgs[0].Str()
-	if len(msgs) > 1 {
-		collection, _ = msgs[1].Str()
-		perms = os.FileMode(0700)
-		collectionDir = filepath.Join(*DataPath, collection)
-		dataDir = filepath.Join(collectionDir, "data")
-		configDir = filepath.Join(collectionDir, "config")
-	} else {
-		collection = ""
-	}
-
 	// CREATE DELETE GET ADD HEAD TAIL - collection data commands
 	// CSET CGET - config setter and getter
 	// TSHEAD TSTAIL - timestamps
 	// PING - server ping
+	var command string
 	switch command {
 	case "TSHEAD":
 		files := getDirFiles(dataDir)
@@ -109,7 +147,7 @@ func (s *Server) HandleRequest(conn net.Conn, data []byte) {
 			conn.Write([]byte("+OK\r\n"))
 			if key == "maxitems" {
 				maxItems, _ := strconv.Atoi(value)
-				enforceMaxItems(collection, maxItems)
+				//enforceMaxItems(collection, maxItems)
 			}
 		} else {
 			conn.Write([]byte("-Config setting error\r\n"))
@@ -118,8 +156,6 @@ func (s *Server) HandleRequest(conn net.Conn, data []byte) {
 		key, _ := msgs[2].Str()
 		value, _ := getConfig(collection, key)
 		fmt.Fprintf(conn, "$%d\r\n%s\r\n", len(value), value)
-	case "PING":
-		conn.Write([]byte("+PONG\r\n"))
 	case "HEAD":
 		files := getDirFiles(dataDir)
 		file := files[len(files)-1]
@@ -131,14 +167,6 @@ func (s *Server) HandleRequest(conn net.Conn, data []byte) {
 	case "GET":
 		files := getDirFiles(dataDir)
 		streamFiles(files, conn)
-	case "CREATE":
-		os.MkdirAll(dataDir, perms)
-		os.MkdirAll(configDir, perms)
-		setConfig(collection, "maxitems", "100")
-		conn.Write([]byte("+OK\r\n"))
-	case "DELETE":
-		os.RemoveAll(collectionDir)
-		conn.Write([]byte("+OK\r\n"))
 	case "ADD":
 		filename := timestamp()
 		fullFilePath := filepath.Join(dataDir, filename)
@@ -154,9 +182,7 @@ func (s *Server) HandleRequest(conn net.Conn, data []byte) {
 		conn.Write([]byte("+OK\r\n"))
 		configMaxItems, _ := getConfig(collection, "maxitems")
 		maxItems, _ := strconv.Atoi(configMaxItems)
-		enforceMaxItems(collection, maxItems)
-	default:
-		conn.Write([]byte("-unrecognized command\r\n"))
+		//enforceMaxItems(collection, maxItems)
 	}
 }
 

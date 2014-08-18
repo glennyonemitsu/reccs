@@ -57,7 +57,7 @@ func handleRequest(conn net.Conn, data []byte) {
 			conn.Write([]byte("+OK\r\n"))
 			if key == "maxitems" {
 				maxItems, _ := strconv.Atoi(value)
-				enforceMaxItems(collection, maxItems)
+				//enforceMaxItems(collection, maxItems)
 			}
 		} else {
 			conn.Write([]byte("-Config setting error\r\n"))
@@ -102,41 +102,11 @@ func handleRequest(conn net.Conn, data []byte) {
 		conn.Write([]byte("+OK\r\n"))
 		configMaxItems, _ := getConfig(collection, "maxitems")
 		maxItems, _ := strconv.Atoi(configMaxItems)
-		enforceMaxItems(collection, maxItems)
+		//enforceMaxItems(collection, maxItems)
 	default:
 		conn.Write([]byte("-unrecognized command\r\n"))
 	}
 
-}
-
-func streamFiles(files []string, w io.Writer) {
-	fmt.Fprintf(w, "*%d\r\n", len(files))
-	for _, f := range files {
-		streamFile(f, w)
-	}
-}
-
-func streamFile(file string, w io.Writer) {
-	var bytes []byte
-	var remaining int64
-
-	fh, _ := os.Open(file)
-	info, _ := fh.Stat()
-	remaining = info.Size()
-	fmt.Fprintf(w, "$%d\r\n", remaining)
-	for remaining > 0 {
-		if remaining < 1024 {
-			bytes = make([]byte, remaining)
-			remaining = 0
-		} else {
-			bytes = make([]byte, 1024)
-			remaining -= 1024
-		}
-		fh.Read(bytes)
-		w.Write(bytes)
-	}
-	fmt.Fprintf(w, "\r\n")
-	fh.Close()
 }
 
 func streamIntegers(ints []int64, w io.Writer) {
@@ -200,18 +170,4 @@ func splitTimestamp(timestamp string) []int64 {
 	seconds, _ := strconv.ParseInt(timestamp[0:10], 10, 64)
 	nseconds, _ := strconv.ParseInt(timestamp[10:], 10, 64)
 	return []int64{seconds, nseconds}
-}
-
-func enforceMaxItems(collection string, max int) {
-	if max < 1 {
-		return
-	}
-	dataPath := filepath.Join(*DataPath, collection, "data")
-	files := getDirFiles(dataPath)
-	if len(files) > max {
-		oldFiles := files[0 : len(files)-max]
-		for _, file := range oldFiles {
-			os.Remove(file)
-		}
-	}
 }

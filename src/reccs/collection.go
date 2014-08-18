@@ -46,6 +46,35 @@ func (c *Collection) SetConfig(key, value string) error {
 	return nil
 }
 
+func (c *Collection) GetDataFiles() []string {
+	var files []string
+	var walker func(path string, info os.FileInfo, err error) error
+
+	walker = func(path string, info os.FileInfo, err error) error {
+		if !info.IsDir() {
+			files = append(files, path)
+		}
+		return nil
+	}
+	filepath.Walk(c.DataPath, walker)
+	return files
+}
+
+func (c *Collection) EnforceMaxItems() {
+	max, _ := c.GetConfig("maxitems")
+	if max < 1 {
+		return
+	}
+	files := c.GetDataFiles()
+	fileCount := int64(len(files))
+	if fileCount > max {
+		oldFiles := files[0 : fileCount-max]
+		for _, file := range oldFiles {
+			os.Remove(file)
+		}
+	}
+}
+
 func CreateCollection(name string, dataPath string) *Collection {
 	c := new(Collection)
 	c.Name = name
