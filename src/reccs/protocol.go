@@ -109,10 +109,6 @@ func handleRequest(conn net.Conn, data []byte) {
 
 }
 
-func isValidcollection(collection string) bool {
-	return true
-}
-
 func streamFiles(files []string, w io.Writer) {
 	fmt.Fprintf(w, "*%d\r\n", len(files))
 	for _, f := range files {

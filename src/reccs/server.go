@@ -5,45 +5,12 @@ import (
 	"fmt"
 	"net"
 	"os"
-	"strconv"
-	"time"
 )
 
 const ReadBufferSize = 64
 
 var DataPath = flag.String("datapath", "/srv/reccs-data/", "Data storage path")
 var BindAddress = flag.String("bind", "localhost:9990", "IP:PORT to bind to")
-
-func timestamp() string {
-	return strconv.FormatInt(time.Now().UnixNano(), 10)
-}
-
-func checkDataPath(dir string) (bool, string) {
-	var result bool
-	var message string
-
-	result = true
-	message = ""
-
-	file, err := os.Open(dir)
-	defer file.Close()
-
-	if err != nil {
-		message = fmt.Sprintf("Error opening data directory: %s\n", dir)
-		result = false
-		return result, message
-	}
-	info, err := file.Stat()
-	if !info.IsDir() {
-		message = fmt.Sprintf("Not a directory: %s\n", dir)
-		result = false
-		return result, message
-	}
-
-	// TODO permission checks
-
-	return result, message
-}
 
 func handleConnection(conn net.Conn) {
 	defer conn.Close()
