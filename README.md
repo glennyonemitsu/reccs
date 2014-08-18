@@ -41,12 +41,12 @@ Get time ordered items in the collection
 Get most recent item
 
 	reccs> HEAD foo
-	"anotheritem"
+	"another item"
 
 Get last item
 
 	reccs> TAIL foo
-	"someitem"
+	"some item"
 
 Get timestamp of most recent item (returns two integers, Unix timestamp seconds
 and nanoseconds)
