@@ -13,15 +13,17 @@ func handleRequest(conn net.Conn, data []byte) {
 	var collection string
 	var collectionDir string
 	var dataDir string
-	var metaDir string
+	var configDir string
 	var perms os.FileMode
 
 	message, err := NewMessage(data)
 	if err != nil {
+		conn.Write([]byte("-Server error\r\n"))
 		return
 	}
 	msgs, err := message.Array()
 	if err != nil {
+		conn.Write([]byte("-Server error\r\n"))
 		return
 	}
 	command, _ := msgs[0].Str()
@@ -30,14 +32,14 @@ func handleRequest(conn net.Conn, data []byte) {
 		perms = os.FileMode(0700)
 		collectionDir = filepath.Join(DataDir, collection)
 		dataDir = filepath.Join(collectionDir, "data")
-		metaDir = filepath.Join(collectionDir, "meta")
+		configDir = filepath.Join(collectionDir, "config")
 	} else {
 		collection = ""
 	}
 
 	// CREATE DELETE GET ADD HEAD TAIL - collection data commands
-	// MSET MGET - collection meta data
-	// TNEW TOLD - timestamps
+	// CSET CGET - config setter and getter
+	// TSHEAD TSTAIL - timestamps
 	// PING - server ping
 	switch command {
 	case "TSHEAD":
@@ -48,6 +50,18 @@ func handleRequest(conn net.Conn, data []byte) {
 		files := getDirFiles(dataDir)
 		timestamp := filepath.Base(files[0])
 		streamIntegers(splitTimestamp(timestamp), conn)
+	case "CSET":
+		key, _ := msgs[2].Str()
+		value, _ := msgs[3].Str()
+		if results := setConfig(collection, key, value); results {
+			conn.Write([]byte("+OK\r\n"))
+		} else {
+			conn.Write([]byte("-Config setting error\r\n"))
+		}
+	case "CGET":
+		key, _ := msgs[2].Str()
+		value, _ := getConfig(collection, key)
+		fmt.Fprintf(conn, "$%d\r\n%s\r\n", len(value), value)
 	case "PING":
 		conn.Write([]byte("+PONG\r\n"))
 	case "HEAD":
@@ -63,7 +77,7 @@ func handleRequest(conn net.Conn, data []byte) {
 		streamFiles(files, conn)
 	case "CREATE":
 		os.MkdirAll(dataDir, perms)
-		os.MkdirAll(metaDir, perms)
+		os.MkdirAll(configDir, perms)
 		conn.Write([]byte("+OK\r\n"))
 	case "DELETE":
 		os.RemoveAll(collectionDir)
@@ -92,28 +106,9 @@ func isValidcollection(collection string) bool {
 }
 
 func streamFiles(files []string, w io.Writer) {
-	var info os.FileInfo
-
 	fmt.Fprintf(w, "*%d\r\n", len(files))
 	for _, f := range files {
-		fh, _ := os.Open(f)
-		info, _ = os.Stat(f)
-		remaining := info.Size()
-		fmt.Fprintf(w, "$%d\r\n", remaining)
-		var bytes []byte
-		for remaining > 0 {
-			if remaining < 1024 {
-				bytes = make([]byte, remaining)
-				remaining = 0
-			} else {
-				bytes = make([]byte, 1024)
-				remaining -= 1024
-			}
-			fh.Read(bytes)
-			w.Write(bytes)
-		}
-		fmt.Fprintf(w, "\r\n")
-		fh.Close()
+		streamFile(f, w)
 	}
 }
 
@@ -139,11 +134,16 @@ func streamFile(file string, w io.Writer) {
 	fmt.Fprintf(w, "\r\n")
 	fh.Close()
 }
+
 func streamIntegers(ints []int64, w io.Writer) {
 	fmt.Fprintf(w, "*%d\r\n", len(ints))
 	for _, i := range ints {
-		fmt.Fprintf(w, ":%d\r\n", i)
+		streamInteger(i, w)
 	}
+}
+
+func streamInteger(value int64, w io.Writer) {
+	fmt.Fprintf(w, ":%d\r\n", value)
 }
 
 func getDirFiles(dirPath string) []string {
@@ -159,6 +159,37 @@ func getDirFiles(dirPath string) []string {
 	filepath.Walk(dirPath, walker)
 	return files
 
+}
+
+func getConfig(collection string, key string) (string, error) {
+	var data []byte
+	configFile := filepath.Join(DataDir, collection, "config", key)
+	fh, err := os.Open(configFile)
+	defer fh.Close()
+	if err != nil {
+		return "", err
+	}
+	stat, err := fh.Stat()
+	if err != nil {
+		return "", err
+	}
+	data = make([]byte, stat.Size())
+	fh.Read(data)
+	return string(data), nil
+}
+
+func setConfig(collection string, key string, value string) bool {
+	configFile := filepath.Join(DataDir, collection, "config", key)
+	fh, err := os.Create(configFile)
+	defer fh.Close()
+	if err != nil {
+		return false
+	}
+	_, err = fh.Write([]byte(value))
+	if err != nil {
+		return false
+	}
+	return true
 }
 
 func splitTimestamp(timestamp string) []int64 {
