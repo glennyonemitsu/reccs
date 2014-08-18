@@ -13,6 +13,14 @@ Reccs is a disk based store, relying on the filesystem and OS to provide good
 enough performance and caching for reads and writes. 
 
 
+## Reccs Over MongoDB's Capped Collections
+
+MongoDB's capped collections have a couple of distinct strict requirements
+compared to Reccs. First, in MongoDB a capped collection cannot grow in data
+size. This is done for performance reasons. Second, it cannot support time based
+expiration. This is planned in the near future for Reccs.
+
+
 ## Commands Supported
 
 Create a new collection
