@@ -154,14 +154,6 @@ func (s *Server) HandleRequest(conn net.Conn, data []byte) {
 		key, _ := msgs[2].Str()
 		value, _ := getConfig(collection, key)
 		fmt.Fprintf(conn, "$%d\r\n%s\r\n", len(value), value)
-	case "HEAD":
-		files := getDirFiles(dataDir)
-		file := files[len(files)-1]
-		streamFile(file, conn)
-	case "TAIL":
-		files := getDirFiles(dataDir)
-		file := files[0]
-		streamFile(file, conn)
 	}
 }
 

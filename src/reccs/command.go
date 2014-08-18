@@ -74,6 +74,38 @@ func init() {
 		},
 	}
 
+	Commands["head"] = Command{
+		Name:        "head",
+		HelpMessage: "Get the latest item in collection",
+		Parameters: []CommandParameter{
+			CommandParameter{
+				Name:     "name",
+				Type:     "collection",
+				Required: true,
+			},
+		},
+		Callback: func(params []interface{}, conn net.Conn, coll *Collection) {
+			files := coll.GetDataFiles()
+			streamFile(files[len(files)-1], conn)
+		},
+	}
+
+	Commands["tail"] = Command{
+		Name:        "tail",
+		HelpMessage: "Get the oldest item in collection",
+		Parameters: []CommandParameter{
+			CommandParameter{
+				Name:     "name",
+				Type:     "collection",
+				Required: true,
+			},
+		},
+		Callback: func(params []interface{}, conn net.Conn, coll *Collection) {
+			files := coll.GetDataFiles()
+			streamFile(files[0], conn)
+		},
+	}
+
 	Commands["add"] = Command{
 		Name:        "add",
 		HelpMessage: "Add item in collection",
