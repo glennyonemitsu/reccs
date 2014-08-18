@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"net"
 	"os"
 	"path/filepath"
@@ -99,7 +98,7 @@ func init() {
 			} else {
 				file.Chmod(os.FileMode(0700))
 				if len(params) > 0 {
-					fmt.Fprint(file, params[0])
+					file.Write(params[0].([]byte))
 				}
 				file.Close()
 			}
