@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"net"
 	"os"
@@ -8,14 +9,16 @@ import (
 	"time"
 )
 
-const DataDir = "/srv/dw-data/"
 const ReadBufferSize = 64
+
+var DataPath = flag.String("datapath", "/srv/reccs-data/", "Data storage path")
+var BindAddress = flag.String("bind", "localhost:9990", "IP:PORT to bind to")
 
 func timestamp() string {
 	return strconv.FormatInt(time.Now().UnixNano(), 10)
 }
 
-func checkDataDir(dir string) (bool, string) {
+func checkDataPath(dir string) (bool, string) {
 	var result bool
 	var message string
 
@@ -26,13 +29,13 @@ func checkDataDir(dir string) (bool, string) {
 	defer file.Close()
 
 	if err != nil {
-		message = fmt.Sprintf("Error opening data directory: %s\n", DataDir)
+		message = fmt.Sprintf("Error opening data directory: %s\n", dir)
 		result = false
 		return result, message
 	}
 	info, err := file.Stat()
 	if !info.IsDir() {
-		message = fmt.Sprintf("Not a directory: %s\n", DataDir)
+		message = fmt.Sprintf("Not a directory: %s\n", dir)
 		result = false
 		return result, message
 	}
@@ -72,13 +75,17 @@ func handleConnection(conn net.Conn) {
 	handleRequest(conn, data)
 }
 
+func init() {
+	flag.Parse()
+}
+
 func main() {
-	if success, message := checkDataDir(DataDir); !success {
+	if success, message := checkDataPath(*DataPath); !success {
 		fmt.Println(message)
 		os.Exit(1)
 	}
 
-	socket, err := net.Listen("tcp", "localhost:9990")
+	socket, err := net.Listen("tcp", *BindAddress)
 	if err != nil {
 		fmt.Println("Cannot setup socket")
 		os.Exit(2)

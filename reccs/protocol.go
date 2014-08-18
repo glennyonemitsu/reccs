@@ -30,7 +30,7 @@ func handleRequest(conn net.Conn, data []byte) {
 	if len(msgs) > 1 {
 		collection, _ = msgs[1].Str()
 		perms = os.FileMode(0700)
-		collectionDir = filepath.Join(DataDir, collection)
+		collectionDir = filepath.Join(*DataPath, collection)
 		dataDir = filepath.Join(collectionDir, "data")
 		configDir = filepath.Join(collectionDir, "config")
 	} else {
@@ -171,7 +171,7 @@ func getDirFiles(dirPath string) []string {
 
 func getConfig(collection string, key string) (string, error) {
 	var data []byte
-	configFile := filepath.Join(DataDir, collection, "config", key)
+	configFile := filepath.Join(*DataPath, collection, "config", key)
 	fh, err := os.Open(configFile)
 	defer fh.Close()
 	if err != nil {
@@ -187,7 +187,7 @@ func getConfig(collection string, key string) (string, error) {
 }
 
 func setConfig(collection string, key string, value string) bool {
-	configFile := filepath.Join(DataDir, collection, "config", key)
+	configFile := filepath.Join(*DataPath, collection, "config", key)
 	fh, err := os.Create(configFile)
 	defer fh.Close()
 	if err != nil {
@@ -210,7 +210,7 @@ func enforceMaxItems(collection string, max int) {
 	if max < 1 {
 		return
 	}
-	dataPath := filepath.Join(DataDir, collection, "data")
+	dataPath := filepath.Join(*DataPath, collection, "data")
 	files := getDirFiles(dataPath)
 	if len(files) > max {
 		oldFiles := files[0 : len(files)-max]
