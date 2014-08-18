@@ -5,7 +5,6 @@ import (
 	"net"
 	"os"
 	"path/filepath"
-	"strconv"
 	"strings"
 )
 
@@ -48,7 +47,6 @@ func (s *Server) HandleConnection(conn net.Conn) {
 func (s *Server) HandleRequest(conn net.Conn, data []byte) {
 	var collection string
 	var dataDir string
-	var perms os.FileMode
 
 	message, err := NewMessage(data)
 	if err != nil {
@@ -146,7 +144,7 @@ func (s *Server) HandleRequest(conn net.Conn, data []byte) {
 		if results := setConfig(collection, key, value); results {
 			conn.Write([]byte("+OK\r\n"))
 			if key == "maxitems" {
-				maxItems, _ := strconv.Atoi(value)
+				//maxItems, _ := strconv.Atoi(value)
 				//enforceMaxItems(collection, maxItems)
 			}
 		} else {
@@ -164,25 +162,6 @@ func (s *Server) HandleRequest(conn net.Conn, data []byte) {
 		files := getDirFiles(dataDir)
 		file := files[0]
 		streamFile(file, conn)
-	case "GET":
-		files := getDirFiles(dataDir)
-		streamFiles(files, conn)
-	case "ADD":
-		filename := timestamp()
-		fullFilePath := filepath.Join(dataDir, filename)
-		file, err := os.Create(fullFilePath)
-		if err != nil {
-			conn.Write([]byte("-cannot create file\r\n"))
-		} else {
-			file.Chmod(perms)
-			entryData, _ := msgs[2].Bytes()
-			file.Write(entryData)
-			file.Close()
-		}
-		conn.Write([]byte("+OK\r\n"))
-		configMaxItems, _ := getConfig(collection, "maxitems")
-		maxItems, _ := strconv.Atoi(configMaxItems)
-		//enforceMaxItems(collection, maxItems)
 	}
 }
 

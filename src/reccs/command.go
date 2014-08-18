@@ -91,7 +91,6 @@ func init() {
 			},
 		},
 		Callback: func(params []interface{}, conn net.Conn, coll *Collection) {
-			var entryData []byte
 			filename := timestamp()
 			fullFilePath := filepath.Join(coll.DataPath, filename)
 			file, err := os.Create(fullFilePath)
