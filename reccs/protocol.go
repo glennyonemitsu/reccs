@@ -82,6 +82,7 @@ func handleRequest(conn net.Conn, data []byte) {
 	case "CREATE":
 		os.MkdirAll(dataDir, perms)
 		os.MkdirAll(configDir, perms)
+		setConfig(collection, "maxitems", "100")
 		conn.Write([]byte("+OK\r\n"))
 	case "DELETE":
 		os.RemoveAll(collectionDir)
