@@ -27,16 +27,16 @@ Delete a collection
 
 Add an item to the collection
 
-	reccs> ADD foo someitem
+	reccs> ADD foo "some item"
 	OK
-	reccs> ADD foo anotheritem
+	reccs> ADD foo "another item"
 	OK
 
 Get time ordered items in the collection 
 
 	reccs> GET foo
-	1) "someitem"
-	2) "anotheritem"
+	1) "some item"
+	2) "another item"
 
 Get most recent item
 
@@ -61,13 +61,30 @@ Get timestamp of last item
 	1) (integer) 1408255676
 	2) (integer) 673164618
 
+Change the maximum number of items in the collection (default is 100)
+
+	reccs> CSET foo maxitems 20
+	OK
+
 Ping
 
 	reccs> PING
 	PONG
 
 
+## To-dos
+
+- A command that subscribes to get new items in a collection, similar to Redis' pub/sub.
+- Following the above, a "maxlisteners" config to throttle this on a per collection basis.
+- Command case insensitivity.
+- Time based expiration.
+- Internally to process the wire protocol as a stream to handle large payloads.
+- Internally better code overall. Currently this is in a "just get it working" state.
+
+
 ## Stability
 
-The Redis protocol support does not support pipelining and pub/sub yet. Adding
-the support is still to be determined. 
+Reccs is pretty much settled on using RESP, so all compatible redis clients and
+libraries will work with reccs. Eventually commands will become set and stable
+but as of right now it is subject to change, though it is unlikely.
+
