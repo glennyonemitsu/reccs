@@ -33,6 +33,11 @@ Create a new collection
 	reccs> CREATE foo
 	OK
 
+Check a collection exists
+
+	reccs> EXISTS foo
+	(integer) 1
+
 Delete a collection
 
 	reccs> DELETE foo
