@@ -16,9 +16,14 @@ enough performance and caching for reads and writes.
 ## Reccs Over MongoDB's Capped Collections
 
 MongoDB's capped collections have a couple of distinct strict requirements
-compared to Reccs. First, in MongoDB a capped collection cannot grow in data
-size. This is done for performance reasons. Second, it cannot support time based
-expiration. This is planned in the near future for Reccs.
+compared to Reccs. This is mainly to optimize MongoDB performance.
+
+You cannot do the following in MongoDB capped collections:
+
+- grow the document capacity in a capped collection
+- combine a document capacity with a TTL (time based expiration)
+
+With reccs, you can.
 
 
 ## Commands Supported
@@ -99,6 +104,12 @@ Change the maximum number of items in the collection (default is 100)
 	reccs> CSET foo maxitems 20
 	OK
 
+Change the max age of items in the collection in milliseconds (default is no 
+limit set to '0')
+
+	reccs> CSET foo maxage 60000
+	OK
+
 Ping
 
 	reccs> PING
@@ -109,9 +120,7 @@ Ping
 
 - A command that subscribes to get new items in a collection, similar to Redis' pub/sub.
 - Following the above, a "maxlisteners" config to throttle this on a per collection basis.
-- Time based expiration.
 - Internally to process the wire protocol as a stream to handle large payloads.
-- Internally better code overall. Currently this is in a "just get it working" state.
 
 
 ## Stability
