@@ -44,6 +44,7 @@ func init() {
 			conn.Write([]byte("+OK\r\n"))
 		},
 	}
+
 	Commands["delete"] = Command{
 		Name:        "delete",
 		HelpMessage: "Delete an existing collection",
@@ -57,6 +58,25 @@ func init() {
 		Callback: func(params []interface{}, conn net.Conn, coll *Collection) {
 			os.RemoveAll(coll.BasePath)
 			conn.Write([]byte("+OK\r\n"))
+		},
+	}
+
+	Commands["exists"] = Command{
+		Name:        "exists",
+		HelpMessage: "Verify existence of a collection",
+		Parameters: []CommandParameter{
+			CommandParameter{
+				Name:     "name",
+				Type:     "collection",
+				Required: true,
+			},
+		},
+		Callback: func(params []interface{}, conn net.Conn, coll *Collection) {
+			if _, err := os.Open(coll.BasePath); err != nil {
+				conn.Write([]byte(":0\r\n"))
+			} else {
+				conn.Write([]byte(":1\r\n"))
+			}
 		},
 	}
 
