@@ -85,6 +85,9 @@ func (s *Server) HandleRequest(conn net.Conn, data []byte) {
 				fmt.Fprint(conn, "-Incorrect command parameters\r\n")
 				return
 			}
+			if !param.Required && i >= paramCount {
+				continue
+			}
 			message = paramMsgs[i]
 			switch param.Type {
 			case "collection":
