@@ -40,34 +40,59 @@ Add an item to the collection
 	reccs> ADD foo "another item"
 	OK
 
-Get time ordered items in the collection 
+Get time ordered items in the collection. This includes the timestamps (seconds,
+then nanoseconds).
 
 	reccs> GET foo
-	1) "some item"
-	2) "another item"
+	1) 1) (integer) 1408255676
+	   2) (integer) 673164618
+	   3) "some item"
+	2) 1) (integer) 1408300669
+	   2) (integer) 699935261
+	   3) "another item"
 
 Get most recent item
 
 	reccs> HEAD foo
-	"another item"
+	1) (integer) 1408300669
+	2) (integer) 699935261
+	3) "another item"
 
 Get last item
 
 	reccs> TAIL foo
-	"some item"
+	1) (integer) 1408255676
+	2) (integer) 673164618
+	3) "some item"
 
-Get timestamp of most recent item (returns two integers, Unix timestamp seconds
-and nanoseconds)
+To get just the timestamps in these commands, append with a "T"
 
-	reccs> TSHEAD foo
+	reccs> GETT foo
+	1) 1) (integer) 1408255676
+	   2) (integer) 673164618
+	2) 1) (integer) 1408300669
+	   2) (integer) 699935261
+
+	reccs> HEADT foo
 	1) (integer) 1408300669
 	2) (integer) 699935261
 
-Get timestamp of last item
-
-	reccs> TSTAIL foo
+	reccs> TAILT foo
 	1) (integer) 1408255676
 	2) (integer) 673164618
+
+To get just the data in these commands, append with a "D"
+Get timestamp of last item
+
+	reccs> GETD foo
+	"some item"
+	"another item"
+
+	reccs> HEADD foo
+	"another item"
+
+	reccs> TAILD foo
+	"some item"
 
 Change the maximum number of items in the collection (default is 100)
 
@@ -84,7 +109,6 @@ Ping
 
 - A command that subscribes to get new items in a collection, similar to Redis' pub/sub.
 - Following the above, a "maxlisteners" config to throttle this on a per collection basis.
-- Command case insensitivity.
 - Time based expiration.
 - Internally to process the wire protocol as a stream to handle large payloads.
 - Internally better code overall. Currently this is in a "just get it working" state.
