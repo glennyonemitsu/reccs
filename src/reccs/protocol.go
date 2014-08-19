@@ -5,7 +5,6 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"strconv"
 )
 
 func streamIntegers(ints []int64, w io.Writer) {
@@ -63,10 +62,4 @@ func setConfig(collection string, key string, value string) bool {
 		return false
 	}
 	return true
-}
-
-func splitTimestamp(timestamp string) []int64 {
-	seconds, _ := strconv.ParseInt(timestamp[0:10], 10, 64)
-	nseconds, _ := strconv.ParseInt(timestamp[10:], 10, 64)
-	return []int64{seconds, nseconds}
 }

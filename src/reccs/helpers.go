@@ -41,3 +41,9 @@ func streamFile(file string, w io.Writer) {
 	fmt.Fprintf(w, "\r\n")
 	fh.Close()
 }
+
+func splitTimestamp(timestamp string) (int64, int64) {
+	seconds, _ := strconv.ParseInt(timestamp[0:10], 10, 64)
+	nseconds, _ := strconv.ParseInt(timestamp[10:], 10, 64)
+	return seconds, nseconds
+}

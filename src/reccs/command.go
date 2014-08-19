@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"net"
 	"os"
 	"path/filepath"
@@ -38,7 +39,7 @@ func init() {
 			perms := os.FileMode(0700)
 			os.MkdirAll(coll.DataPath, perms)
 			os.MkdirAll(coll.ConfigPath, perms)
-			coll.SetConfig("maxitems", "100")
+			coll.SetConfig("maxitems", 100)
 			conn.Write([]byte("+OK\r\n"))
 		},
 	}
@@ -60,7 +61,48 @@ func init() {
 
 	Commands["get"] = Command{
 		Name:        "get",
-		HelpMessage: "Get all items in collection in ascending order",
+		HelpMessage: "Get all items including timestamps in the collection in ascending order",
+		Parameters: []CommandParameter{
+			CommandParameter{
+				Name:     "name",
+				Type:     "collection",
+				Required: true,
+			},
+		},
+		Callback: func(params []interface{}, conn net.Conn, coll *Collection) {
+			files := coll.GetDataFiles()
+			fmt.Fprintf(conn, "*%d\r\n", len(files))
+			for _, file := range files {
+				sec, nsec := splitTimestamp(filepath.Base(file))
+				fmt.Fprintf(conn, "*3\r\n:%d\r\n:%d\r\n", sec, nsec)
+				streamFile(file, conn)
+			}
+		},
+	}
+
+	Commands["gett"] = Command{
+		Name:        "gett",
+		HelpMessage: "Get all timestamps in the collection in ascending order",
+		Parameters: []CommandParameter{
+			CommandParameter{
+				Name:     "name",
+				Type:     "collection",
+				Required: true,
+			},
+		},
+		Callback: func(params []interface{}, conn net.Conn, coll *Collection) {
+			files := coll.GetDataFiles()
+			fmt.Fprintf(conn, "*%d\r\n", len(files))
+			for _, file := range files {
+				sec, nsec := splitTimestamp(filepath.Base(file))
+				fmt.Fprintf(conn, "*2\r\n:%d\r\n:%d\r\n", sec, nsec)
+			}
+		},
+	}
+
+	Commands["getd"] = Command{
+		Name:        "getd",
+		HelpMessage: "Get all items' data in the collection in ascending order",
 		Parameters: []CommandParameter{
 			CommandParameter{
 				Name:     "name",
@@ -76,7 +118,44 @@ func init() {
 
 	Commands["head"] = Command{
 		Name:        "head",
-		HelpMessage: "Get the latest item in collection",
+		HelpMessage: "Get the latest item in the collection",
+		Parameters: []CommandParameter{
+			CommandParameter{
+				Name:     "name",
+				Type:     "collection",
+				Required: true,
+			},
+		},
+		Callback: func(params []interface{}, conn net.Conn, coll *Collection) {
+			files := coll.GetDataFiles()
+			file := files[len(files)-1]
+			sec, nsec := splitTimestamp(filepath.Base(file))
+			fmt.Fprintf(conn, "*3\r\n:%d\r\n:%d\r\n", sec, nsec)
+			streamFile(file, conn)
+		},
+	}
+
+	Commands["headt"] = Command{
+		Name:        "headt",
+		HelpMessage: "Get the latest item's timestamp in the collection",
+		Parameters: []CommandParameter{
+			CommandParameter{
+				Name:     "name",
+				Type:     "collection",
+				Required: true,
+			},
+		},
+		Callback: func(params []interface{}, conn net.Conn, coll *Collection) {
+			files := coll.GetDataFiles()
+			file := files[len(files)-1]
+			sec, nsec := splitTimestamp(filepath.Base(file))
+			fmt.Fprintf(conn, "*2\r\n:%d\r\n:%d\r\n", sec, nsec)
+		},
+	}
+
+	Commands["headd"] = Command{
+		Name:        "headd",
+		HelpMessage: "Get the latest item data in the collection",
 		Parameters: []CommandParameter{
 			CommandParameter{
 				Name:     "name",
@@ -92,7 +171,44 @@ func init() {
 
 	Commands["tail"] = Command{
 		Name:        "tail",
-		HelpMessage: "Get the oldest item in collection",
+		HelpMessage: "Get the oldest item in the collection",
+		Parameters: []CommandParameter{
+			CommandParameter{
+				Name:     "name",
+				Type:     "collection",
+				Required: true,
+			},
+		},
+		Callback: func(params []interface{}, conn net.Conn, coll *Collection) {
+			files := coll.GetDataFiles()
+			file := files[0]
+			sec, nsec := splitTimestamp(filepath.Base(file))
+			fmt.Fprintf(conn, "*3\r\n:%d\r\n:%d\r\n", sec, nsec)
+			streamFile(file, conn)
+		},
+	}
+
+	Commands["tailt"] = Command{
+		Name:        "tailt",
+		HelpMessage: "Get the oldest item's timestamp in the collection",
+		Parameters: []CommandParameter{
+			CommandParameter{
+				Name:     "name",
+				Type:     "collection",
+				Required: true,
+			},
+		},
+		Callback: func(params []interface{}, conn net.Conn, coll *Collection) {
+			files := coll.GetDataFiles()
+			file := files[0]
+			sec, nsec := splitTimestamp(filepath.Base(file))
+			fmt.Fprintf(conn, "*2\r\n:%d\r\n:%d\r\n", sec, nsec)
+		},
+	}
+
+	Commands["taild"] = Command{
+		Name:        "taild",
+		HelpMessage: "Get the oldest item data in the collection",
 		Parameters: []CommandParameter{
 			CommandParameter{
 				Name:     "name",
@@ -135,6 +251,60 @@ func init() {
 				file.Close()
 			}
 			conn.Write([]byte("+OK\r\n"))
+		},
+	}
+
+	Commands["cget"] = Command{
+		Name:        "cget",
+		HelpMessage: "Get configuration value",
+		Parameters: []CommandParameter{
+			CommandParameter{
+				Name:     "name",
+				Type:     "collection",
+				Required: true,
+			},
+			CommandParameter{
+				Name:     "key",
+				Type:     "string",
+				Required: true,
+			},
+		},
+		Callback: func(params []interface{}, conn net.Conn, coll *Collection) {
+			value, err := coll.GetConfig(params[0].(string))
+			if err != nil {
+				conn.Write([]byte("-Error getting configuration value\r\n"))
+			} else {
+				fmt.Fprintf(conn, ":%d\r\n", value)
+			}
+		},
+	}
+
+	Commands["cset"] = Command{
+		Name:        "cset",
+		HelpMessage: "Set configuration value",
+		Parameters: []CommandParameter{
+			CommandParameter{
+				Name:     "name",
+				Type:     "collection",
+				Required: true,
+			},
+			CommandParameter{
+				Name:     "key",
+				Type:     "string",
+				Required: true,
+			},
+			CommandParameter{
+				Name:     "value",
+				Type:     "integer",
+				Required: true,
+			},
+		},
+		Callback: func(params []interface{}, conn net.Conn, coll *Collection) {
+			if err := coll.SetConfig(params[0].(string), params[1].(int64)); err != nil {
+				conn.Write([]byte("-Error getting configuration value\r\n"))
+			} else {
+				fmt.Fprint(conn, "+OK\r\n")
+			}
 		},
 	}
 

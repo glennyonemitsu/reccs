@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"net"
 	"os"
-	"path/filepath"
+	"strconv"
 	"strings"
 )
 
@@ -45,8 +45,11 @@ func (s *Server) HandleConnection(conn net.Conn) {
 }
 
 func (s *Server) HandleRequest(conn net.Conn, data []byte) {
-	var collection string
-	var dataDir string
+	var paramMsgs []*Message
+	var paramCount int
+	var collection *Collection
+	var parameters []interface{}
+	var message *Message
 
 	message, err := NewMessage(data)
 	if err != nil {
@@ -67,11 +70,6 @@ func (s *Server) HandleRequest(conn net.Conn, data []byte) {
 	}
 
 	if command, ok := s.Commands[strings.ToLower(commandName)]; ok {
-		var paramMsgs []*Message
-		var paramCount int
-		var collection *Collection
-		var parameters []interface{}
-		var message *Message
 
 		paramMsgs = msgs[1:]
 		paramCount = len(paramMsgs)
@@ -82,6 +80,7 @@ func (s *Server) HandleRequest(conn net.Conn, data []byte) {
 		}
 
 		for i, param := range command.Parameters {
+
 			if param.Required && i >= paramCount {
 				fmt.Fprint(conn, "-Incorrect command parameters\r\n")
 				return
@@ -103,12 +102,17 @@ func (s *Server) HandleRequest(conn net.Conn, data []byte) {
 				}
 				parameters = append(parameters, value)
 			case "integer":
-				value, err := message.Int()
+				value, err := message.Str()
 				if err != nil {
 					fmt.Fprint(conn, "-Incorrect command parameters\r\n")
 					return
 				}
-				parameters = append(parameters, value)
+				intValue, err := strconv.ParseInt(value, 10, 64)
+				if err != nil {
+					fmt.Fprint(conn, "-Incorrect command parameters\r\n")
+					return
+				}
+				parameters = append(parameters, intValue)
 			case "binary":
 				value, err := message.Bytes()
 				if err != nil {
@@ -128,33 +132,19 @@ func (s *Server) HandleRequest(conn net.Conn, data []byte) {
 	// CSET CGET - config setter and getter
 	// TSHEAD TSTAIL - timestamps
 	// PING - server ping
-	var command string
-	switch command {
-	case "TSHEAD":
-		files := getDirFiles(dataDir)
-		timestamp := filepath.Base(files[len(files)-1])
-		streamIntegers(splitTimestamp(timestamp), conn)
-	case "TSTAIL":
-		files := getDirFiles(dataDir)
-		timestamp := filepath.Base(files[0])
-		streamIntegers(splitTimestamp(timestamp), conn)
-	case "CSET":
-		key, _ := msgs[2].Str()
-		value, _ := msgs[3].Str()
-		if results := setConfig(collection, key, value); results {
-			conn.Write([]byte("+OK\r\n"))
-			if key == "maxitems" {
-				//maxItems, _ := strconv.Atoi(value)
-				//enforceMaxItems(collection, maxItems)
-			}
-		} else {
-			conn.Write([]byte("-Config setting error\r\n"))
+	/*
+		var command string
+		switch command {
+		case "TSHEAD":
+			files := getDirFiles(dataDir)
+			timestamp := filepath.Base(files[len(files)-1])
+			streamIntegers(splitTimestamp(timestamp), conn)
+		case "TSTAIL":
+			files := getDirFiles(dataDir)
+			timestamp := filepath.Base(files[0])
+			streamIntegers(splitTimestamp(timestamp), conn)
 		}
-	case "CGET":
-		key, _ := msgs[2].Str()
-		value, _ := getConfig(collection, key)
-		fmt.Fprintf(conn, "$%d\r\n%s\r\n", len(value), value)
-	}
+	*/
 }
 
 func (s *Server) Serve() {

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -32,14 +33,14 @@ func (c *Collection) GetConfig(key string) (int64, error) {
 	return strconv.ParseInt(string(data), 10, 64)
 }
 
-func (c *Collection) SetConfig(key, value string) error {
+func (c *Collection) SetConfig(key string, value int64) error {
 	configFile := filepath.Join(c.ConfigPath, key)
 	fh, err := os.Create(configFile)
 	defer fh.Close()
 	if err != nil {
 		return err
 	}
-	_, err = fh.Write([]byte(value))
+	_, err = fmt.Fprintf(fh, "%d", value)
 	if err != nil {
 		return err
 	}
