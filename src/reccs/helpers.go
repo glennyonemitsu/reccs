@@ -12,6 +12,12 @@ func timestamp() string {
 	return strconv.FormatInt(time.Now().UnixNano(), 10)
 }
 
+func splitTimestamp(timestamp string) (int64, int64) {
+	seconds, _ := strconv.ParseInt(timestamp[0:10], 10, 64)
+	nseconds, _ := strconv.ParseInt(timestamp[10:], 10, 64)
+	return seconds, nseconds
+}
+
 func streamFiles(files []string, w io.Writer) {
 	fmt.Fprintf(w, "*%d\r\n", len(files))
 	for _, f := range files {
@@ -42,8 +48,13 @@ func streamFile(file string, w io.Writer) {
 	fh.Close()
 }
 
-func splitTimestamp(timestamp string) (int64, int64) {
-	seconds, _ := strconv.ParseInt(timestamp[0:10], 10, 64)
-	nseconds, _ := strconv.ParseInt(timestamp[10:], 10, 64)
-	return seconds, nseconds
+func streamIntegers(ints []int64, w io.Writer) {
+	fmt.Fprintf(w, "*%d\r\n", len(ints))
+	for _, i := range ints {
+		streamInteger(i, w)
+	}
+}
+
+func streamInteger(value int64, w io.Writer) {
+	fmt.Fprintf(w, ":%d\r\n", value)
 }
