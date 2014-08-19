@@ -249,8 +249,9 @@ func init() {
 					file.Write(params[0].([]byte))
 				}
 				file.Close()
+				coll.EnforceMaxItems()
+				conn.Write([]byte("+OK\r\n"))
 			}
-			conn.Write([]byte("+OK\r\n"))
 		},
 	}
 
@@ -303,6 +304,7 @@ func init() {
 			if err := coll.SetConfig(params[0].(string), params[1].(int64)); err != nil {
 				conn.Write([]byte("-Error getting configuration value\r\n"))
 			} else {
+				coll.EnforceMaxItems()
 				fmt.Fprint(conn, "+OK\r\n")
 			}
 		},

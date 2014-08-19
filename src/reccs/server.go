@@ -128,23 +128,6 @@ func (s *Server) HandleRequest(conn net.Conn, data []byte) {
 	}
 	return
 
-	// CREATE DELETE GET ADD HEAD TAIL - collection data commands
-	// CSET CGET - config setter and getter
-	// TSHEAD TSTAIL - timestamps
-	// PING - server ping
-	/*
-		var command string
-		switch command {
-		case "TSHEAD":
-			files := getDirFiles(dataDir)
-			timestamp := filepath.Base(files[len(files)-1])
-			streamIntegers(splitTimestamp(timestamp), conn)
-		case "TSTAIL":
-			files := getDirFiles(dataDir)
-			timestamp := filepath.Base(files[0])
-			streamIntegers(splitTimestamp(timestamp), conn)
-		}
-	*/
 }
 
 func (s *Server) Serve() {
