@@ -36,12 +36,16 @@ func init() {
 			},
 		},
 		Callback: func(params []interface{}, conn net.Conn, coll *Collection) {
-			perms := os.FileMode(0700)
-			os.MkdirAll(coll.DataPath, perms)
-			os.MkdirAll(coll.ConfigPath, perms)
-			coll.SetConfig("maxitems", 100)
-			coll.SetConfig("maxage", 0)
-			conn.Write([]byte("+OK\r\n"))
+			if coll.Exists() {
+				conn.Write([]byte("-Collection already exists\r\n"))
+			} else {
+				perms := os.FileMode(0700)
+				os.MkdirAll(coll.DataPath, perms)
+				os.MkdirAll(coll.ConfigPath, perms)
+				coll.SetConfig("maxitems", 100)
+				coll.SetConfig("maxage", 0)
+				conn.Write([]byte("+OK\r\n"))
+			}
 		},
 	}
 
@@ -56,8 +60,12 @@ func init() {
 			},
 		},
 		Callback: func(params []interface{}, conn net.Conn, coll *Collection) {
-			os.RemoveAll(coll.BasePath)
-			conn.Write([]byte("+OK\r\n"))
+			if coll.Exists() {
+				os.RemoveAll(coll.BasePath)
+				conn.Write([]byte("+OK\r\n"))
+			} else {
+				conn.Write([]byte("-Collection does not exist\r\n"))
+			}
 		},
 	}
 
@@ -72,10 +80,10 @@ func init() {
 			},
 		},
 		Callback: func(params []interface{}, conn net.Conn, coll *Collection) {
-			if _, err := os.Open(coll.BasePath); err != nil {
-				conn.Write([]byte(":0\r\n"))
-			} else {
+			if coll.Exists() {
 				conn.Write([]byte(":1\r\n"))
+			} else {
+				conn.Write([]byte(":0\r\n"))
 			}
 		},
 	}

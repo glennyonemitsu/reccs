@@ -96,6 +96,12 @@ func (c *Collection) EnforceCapacity() {
 	}
 }
 
+func (c *Collection) Exists() bool {
+	fh, err := os.Open(c.BasePath)
+	fh.Close()
+	return err == nil
+}
+
 func CreateCollection(name string, dataPath string) *Collection {
 	c := new(Collection)
 	c.Name = name
