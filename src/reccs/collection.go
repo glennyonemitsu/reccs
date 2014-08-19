@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"time"
 )
 
 type Collection struct {
@@ -50,10 +51,29 @@ func (c *Collection) SetConfig(key string, value int64) error {
 func (c *Collection) GetDataFiles() []string {
 	var files []string
 	var walker func(path string, info os.FileInfo, err error) error
+	var maxAge int64
+	var ageThreshold int64
+
+	maxAge, _ = c.GetConfig("maxage")
+	ageThreshold = time.Now().UnixNano() - (maxAge * 1000000)
 
 	walker = func(path string, info os.FileInfo, err error) error {
+		var fileAge int64
+		fileAge, err = strconv.ParseInt(filepath.Base(path), 10, 64)
+		if err != nil {
+			return nil
+		}
 		if !info.IsDir() {
-			files = append(files, path)
+			// enforce max age, remove old items
+			if maxAge <= 0 {
+				files = append(files, path)
+			} else {
+				if fileAge >= ageThreshold {
+					files = append(files, path)
+				} else {
+					os.Remove(path)
+				}
+			}
 		}
 		return nil
 	}
@@ -61,16 +81,16 @@ func (c *Collection) GetDataFiles() []string {
 	return files
 }
 
-func (c *Collection) EnforceMaxItems() {
-	max, _ := c.GetConfig("maxitems")
-	if max < 1 {
-		return
-	}
+func (c *Collection) EnforceCapacity() {
+	maxItems, _ := c.GetConfig("maxitems")
+	maxAge, _ := c.GetConfig("maxage")
 	files := c.GetDataFiles()
 	fileCount := int64(len(files))
-	if fileCount > max {
-		oldFiles := files[0 : fileCount-max]
-		for _, file := range oldFiles {
+	indexThreshold := fileCount - maxItems
+	ageThreshold := time.Now().UnixNano() - (maxAge * 1000000)
+	for i, file := range files {
+		fileAge, _ := strconv.ParseInt(filepath.Base(file), 10, 64)
+		if (maxItems > 0 && int64(i) < indexThreshold) || (maxAge > 0 && fileAge < ageThreshold) {
 			os.Remove(file)
 		}
 	}

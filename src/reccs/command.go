@@ -40,6 +40,7 @@ func init() {
 			os.MkdirAll(coll.DataPath, perms)
 			os.MkdirAll(coll.ConfigPath, perms)
 			coll.SetConfig("maxitems", 100)
+			coll.SetConfig("maxage", 0)
 			conn.Write([]byte("+OK\r\n"))
 		},
 	}
@@ -249,7 +250,7 @@ func init() {
 					file.Write(params[0].([]byte))
 				}
 				file.Close()
-				coll.EnforceMaxItems()
+				coll.EnforceCapacity()
 				conn.Write([]byte("+OK\r\n"))
 			}
 		},
@@ -304,7 +305,7 @@ func init() {
 			if err := coll.SetConfig(params[0].(string), params[1].(int64)); err != nil {
 				conn.Write([]byte("-Error getting configuration value\r\n"))
 			} else {
-				coll.EnforceMaxItems()
+				coll.EnforceCapacity()
 				fmt.Fprint(conn, "+OK\r\n")
 			}
 		},
