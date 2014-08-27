@@ -1,4 +1,4 @@
-package main
+package reccs
 
 type CommandParameter struct {
 	Name     string

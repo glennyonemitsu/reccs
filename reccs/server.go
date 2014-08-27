@@ -1,4 +1,4 @@
-package main
+package reccs
 
 import (
 	"fmt"
@@ -7,6 +7,8 @@ import (
 	"strconv"
 	"strings"
 )
+
+const ReadBufferSize = 64
 
 type Server struct {
 	BindAddress string

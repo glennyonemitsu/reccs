@@ -3,7 +3,7 @@
 // This package provides an easy to use interface for creating and parsing
 // messages encoded in the REdis Serialization Protocol (RESP). You can check
 // out more details about the protocol here: http://redis.io/topics/protocol
-package main
+package reccs
 
 import (
 	"bufio"
